@@ -99,7 +99,7 @@ local function inject(name)
 	if placeholder then
 		return placeholder
 	end
-	local placeholder = makePlaceholder(name, nil)
+	placeholder = makePlaceholder(name, nil)
 	placeholders[name] = placeholder
 	return placeholder
 end
@@ -140,7 +140,7 @@ ioc_require = function(name)
 		--for inject
 		inject = inject,
 
-		--for lazy cs modual import
+		--for lazy import
 		lazy_import = {},
 		using = using,
 		lazy = lazy,
@@ -169,7 +169,6 @@ local function isPlaceholder(value)
 end
 local function enumAllPlaceholder(mod)
 	local upvalues = {}
-	local table_keys = {}
 	local table_values = {}
 
 	local env = LOADED[mod]
@@ -211,12 +210,6 @@ local function enumAllPlaceholder(mod)
 			end
 		elseif tt == 'table' then
 			for k,v in pairs(value)do
-				if isPlaceholder(k) then
-					table.insert(table_keys, {k, value})
-				else
-					iterator(k)
-				end
-
 				if isPlaceholder(v) then
 					table.insert(table_values, {v, value, k})
 				else
@@ -226,21 +219,23 @@ local function enumAllPlaceholder(mod)
 		end
 	end
 	iterator(mod)
-	return upvalues,table_keys,table_values
+	return upvalues,table_values
 end
 
 local instanceProvider = {}
-local upvalue = {}
+local resolveValueCache
 local function resolveValue(placeholder)
 	local name = placeholder.name
-	if upvalue[name] then
-		return upvalue[name]
+	if resolveValueCache and resolveValueCache[name] then
+		return resolveValueCache[name]
 	end
 	local find = instanceProvider[name]
 	if find == nil then
 		find = findObject(_G, name)
 	end
-	upvalue[name] = find
+	if resolveValueCache then
+		resolveValueCache[name] = find
+	end
 
 	if find == nil then
 		print(string.format("%s can't resolve", tostring(placeholder)))
@@ -251,32 +246,51 @@ local function resolveValue(placeholder)
 	return find
 end
 
+local UVAddresses = {}
+local TVAddresses = {}
+local function makeUVAddress(f, i) return tostring(f) .. ':' .. tostring(i) end
+local function makeTVAddress(t,k) return tostring(t) .. ':' .. tostring(v) end
 function M.resolve(mod)
 	assert(mod)
-	local upvalues,table_keys,table_values = enumAllPlaceholder(mod)
+	--gather
+	local upvalues,table_values = enumAllPlaceholder(mod)
 	for _,v in ipairs(upvalues)do
 		local placeholder,f,i = table.unpack(v)
-		local value = resolveValue(placeholder)
-		debug.setupvalue(f, i, value)
-	end
-	for _,v in ipairs(table_keys)do
-		local placeholder,host = table.unpack(v)
-		local value = resolveValue(placeholder)
-		host[value] = host[placeholder]
-		host[placeholder] = nil
+		local name = placeholder.name
+		UVAddresses[name] = UVAddresses[name]or {}
+		UVAddresses[name][makeUVAddress(f,i)] = {placeholder, f, i}
 	end
 	for _,v in ipairs(table_values)do
-		local placeholder,host,key = table.unpack(v)
-		local value = resolveValue(placeholder)
-		host[key] = value
+		local placeholder,tab,key = table.unpack(v)
+		local name = placeholder.name
+		TVAddresses[name] = TVAddresses[name]or {}
+		TVAddresses[name][makeTVAddress(tab,key)] = {placeholder, tab, key}
+	end
+
+	--resolve
+	for _,addresses in pairs(UVAddresses)do
+		for _,v in pairs(addresses)do
+			local placeholder,f,i = table.unpack(v)
+			local value = resolveValue(placeholder)
+			debug.setupvalue(f, i, value)
+		end
+	end
+	for _,addresses in pairs(TVAddresses)do
+		for _,v in pairs(addresses)do
+			local placeholder,tab,key = table.unpack(v)
+			local value = resolveValue(placeholder)
+			tab[key] = value
+		end
 	end
 end
 
 function M.resolveAll()
+	resolveValueCache = {}
 	resolved = true
 	for mod,_ in pairs(LOADED)do
 		M.resolve(mod)
 	end
+	resolveValueCache = nil
 end
 
 function M.provide(name, value)

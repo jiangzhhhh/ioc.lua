@@ -113,6 +113,7 @@ local function lazy(name)
 	return setmetatable({name=name}, lazy_mt)
 end
 local function using(aliasTable)
+	assert(type(aliasTable)=='table', 'usage: using{key = lazy \'xxx\'}')
 	local env = getEnv()
 	local lazy_import = rawget(env, 'lazy_import')
 	assert(lazy_import)

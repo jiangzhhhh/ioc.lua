@@ -11,11 +11,11 @@
 ```
 --见example.lua
 local ioc = require 'ioc'
-local mod = ioc.require 'mod'		--使用ioc.requre代替require
-ioc.provide('$LOG', trace)			--提供注入实例
-ioc.resolveAll()					--在你认为的程序启动处，调用注入解析
+local mod = ioc.require 'mod'       --使用ioc.requre代替require,ioc.require会传播给模块环境
+ioc.provide('$LOG', trace)          --提供注入实例
+ioc.resolveAll()                    --在你认为的程序启动处，调用注入解析
 
-mod.output('aaa')					--正常逻辑
+mod.output('aaa')                   --正常逻辑
 ```
 
 ## 注入变量

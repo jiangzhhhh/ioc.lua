@@ -124,12 +124,14 @@ local function using(aliasTable)
 	end
 end
 
-local LOADED = {}
+local ioc_loaded = {}
+local ioc_moduals = {}
 local ioc_require
 ioc_require = function(name)
 	assert(type(name) == "string")
 	local _R = debug.getregistry()
-	local mod = _R['_LOADED'][name]
+	local _LOADED =_R['_LOADED']
+	local mod = _LOADED[name] or ioc_loaded[name]
 	if mod then
 		return mod
 	end
@@ -154,11 +156,12 @@ ioc_require = function(name)
 	mod = loader(name, arg) or true
 	local tt = type(mod)
 	if tt == 'table' or tt == 'function' then
-		LOADED[mod] = sandbox
+		ioc_moduals[mod] = sandbox
 		if resolved then
 			M.resolve(mod)
 		end
 	end
+	ioc_loaded[name] = mod
 	return mod
 end
 M.require = ioc_require
@@ -171,7 +174,7 @@ local function enumAllPlaceholder(mod)
 	local upvalues = {}
 	local table_values = {}
 
-	local env = LOADED[mod]
+	local env = ioc_moduals[mod]
 	local visited = {
 		[env]=true,
 		[table]=true,
@@ -287,7 +290,7 @@ end
 function M.resolveAll()
 	resolveValueCache = {}
 	resolved = true
-	for mod,_ in pairs(LOADED)do
+	for mod,_ in pairs(ioc_moduals)do
 		M.resolve(mod)
 	end
 	resolveValueCache = nil

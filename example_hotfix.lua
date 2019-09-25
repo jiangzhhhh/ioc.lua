@@ -5,6 +5,6 @@ ioc.provide('$attack', 'shot')
 ioc.resolveAll()
 mod.attack('I', 'you')
 
-ioc.provide('$attack', 'crop')
+ioc.provide('$attack', 'chop')
 ioc.resolveAll()
 mod.attack('I', 'you')

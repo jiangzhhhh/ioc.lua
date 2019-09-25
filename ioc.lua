@@ -162,6 +162,7 @@ ioc_require = function(name)
 		end
 	end
 	ioc_loaded[name] = mod
+	_LOADED[name] = mod
 	return mod
 end
 M.require = ioc_require

@@ -70,12 +70,12 @@ local sandbox_env_mt={
 	__index = function(env, key)
 		local lazy_import = rawget(env, 'lazy_import')
 		if lazy_import then
-			local fqn = lazy_import[key]
-			if fqn then
-				local find = findObject(_G, fqn)
-				print('lazy import', fqn, find)
-				rawset(env, key, find)
-				return find
+			local eval = lazy_import[key]
+			if eval then
+				local value = eval()
+				print('lazy import', key, value)
+				rawset(env, key, value)
+				return value
 			end
 		end
 		return _G[key]
@@ -103,15 +103,7 @@ local function inject(name)
 	placeholders[name] = placeholder
 	return placeholder
 end
-local lazy_mt = {
-	__index = function() error("lazy object can't be index") end,
-	__newindex = function() error("lazy object can't be newindex") end,
-	__call = function() error("lazy object can't be call") end,
-	__tostring = function(self) return "[lazy]" .. self.name end
-}
-local function lazy(name)
-	return setmetatable({name=name}, lazy_mt)
-end
+local function lazy(name) return function() return findObject(_G, name) end end
 local function using(aliasTable)
 	assert(type(aliasTable)=='table', 'usage: using{key = lazy \'xxx\'}')
 	local env = getEnv()
@@ -119,8 +111,8 @@ local function using(aliasTable)
 	assert(lazy_import)
 	for k,v in pairs(aliasTable)do
 		assert(type(k) == 'string', 'must be string')
-		assert(type(v) == 'table' and getmetatable(v) == lazy_mt, 'must use `lazy` function')
-		lazy_import[k] = v.name
+		assert(type(v) == 'function', 'must be function')
+		lazy_import[k] = v
 	end
 end
 

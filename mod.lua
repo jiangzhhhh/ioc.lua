@@ -5,11 +5,12 @@ local Debug ={
 	Error = inject '$ERROR',
 }
 local assert = inject 'assert'
-using{
-	print = lazy '_G.print',
-	debug = lazy '_G.debug',
+lazy{
+	print = import '_G.print',
+	debug = import '_G.debug',
+	luckNumber = function() return math.random() end,
 }
-using{anthor_print = lazy '_G.print'}
+lazy{anthor_print = import '_G.print'}
 
 local M = {}
 
@@ -23,6 +24,7 @@ function M.output(str)
 	Debug.Error(str)
 	print('debug lib:', debug)
 	anthor_print('short_src:', debug.getinfo(1).short_src)
+	print('my luck number:', luckNumber)
 end
 
 return M

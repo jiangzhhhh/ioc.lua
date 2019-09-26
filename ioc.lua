@@ -103,8 +103,8 @@ local function inject(name)
 	placeholders[name] = placeholder
 	return placeholder
 end
-local function lazy(name) return function() return findObject(_G, name) end end
-local function using(aliasTable)
+local function import(name) return function() return findObject(_G, name) end end
+local function lazy(aliasTable)
 	assert(type(aliasTable)=='table', 'usage: using{key = lazy \'xxx\'}')
 	local env = getEnv()
 	local lazy_import = rawget(env, 'lazy_import')
@@ -136,8 +136,8 @@ ioc_require = function(name)
 
 		--for lazy import
 		lazy_import = {},
-		using = using,
 		lazy = lazy,
+		import = import,
 
 		require = ioc_require,
 	}, sandbox_env_mt)

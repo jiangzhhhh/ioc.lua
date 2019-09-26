@@ -30,11 +30,12 @@ local Debug ={
 ```
 
 ## 延迟求值
-使用using{key = lazy 'name'}
-由using-lazy创建的变量，将在首次使用变量时求值/固化
+使用lazy{a = import 'x.y.z', b = function() return xxx end}
+由lazy-import创建的变量，将在首次使用变量时求值/固化
 ```
-using{
-	print = lazy '_G.print',
-	debug = lazy '_G.debug',
+lazy{
+	print = import '_G.print',
+	debug = import '_G.debug',
+	luckNumber = function() return math.random() end,
 }
 ```
